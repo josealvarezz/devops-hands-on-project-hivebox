@@ -28,8 +28,59 @@ This repository is the starting point for [HiveBox](https://devopsroadmap.io/pro
 - [x] Tech stack chosen and documented
 - [x] Contribution strategy established
 - [x] Sensors selected and listed
+- [x] Minimal FastAPI app created
+- [x] `/version` endpoint implemented
+- [x] Dockerfile working
+- [x] Can run and test both locally and via Docker
 
----
+## How to Run Locally
+
+1. **Create and activate a virtual environment:**
+   ```sh
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+2. **Install dependencies:**
+   ```sh
+   pip install -r requirements.txt
+   ```
+3. **Run the application:**
+   ```sh
+   fastapi dev main.py
+   ```
+   or
+   ```sh
+   uvicorn main:app --reload
+   ```
+4. **Check the API:**
+   - Open [http://localhost:8000/version](http://localhost:8000/version) in your browser.
+   - You should see:
+     ```json
+     { "version": "0.0.1" }
+     ```
+
+## Running with Docker
+
+1. **Build the Docker image:**
+   ```sh
+   docker build -t hivebox:0.0.1 .
+   ```
+2. **Run the container:**
+   ```sh
+   docker run --rm -p 8000:80 hivebox:0.0.1
+   ```
+3. **Test the API:**
+   - Open [http://localhost:8000/version](http://localhost:8000/version)
+   - You should see:
+     ```json
+     { "version": "0.0.1" }
+     ```
+
+## Endpoints
+
+| Endpoint   | Method | Description                 |
+| ---------- | ------ | --------------------------- |
+| `/version` | GET    | Returns current app version |
 
 ## Implementation
 
@@ -63,3 +114,6 @@ These are the three senseBox sensors selected from [openSenseMap](https://opense
 - [2025-06-22] Project forked from [HiveBox original repository](https://github.com/DevOpsHiveHQ/devops-hands-on-project-hivebox).
 - [2025-06-22] Chosen tech stack: FastAPI (Python) for backend.
 - [2025-06-22] Selected 3 senseBox sensors from openSenseMap.
+- [2025-06-22] Created minimal FastAPI app and implemented `/version` endpoint as MVP.
+- [2025-06-22] Dockerized the app using `fastapi run` as per official docs.
+- [2025-06-22] Confirmed the app runs and can be tested both locally and via Docker.
