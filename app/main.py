@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from .sensebox import get_temps, FIRST_SENSEBOX_ID, SECOND_SENSEBOX_ID, THIRD_SENSEBOX_ID
 
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 app = FastAPI()
 
 
