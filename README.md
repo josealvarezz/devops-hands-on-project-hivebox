@@ -35,6 +35,7 @@ This repository is the starting point for [HiveBox](https://devopsroadmap.io/pro
 - [x] Dockerfile updated to support new structure (`app/main.py`)
 - [x] .dockerignore updated and improved
 - [x] Can run and test both locally and via Docker
+- [x] Continuous Integration (CI) pipeline with linting, testing, and Docker build (only runs on main or PRs to main)
 
 ## How to Run Locally
 
@@ -85,6 +86,15 @@ This repository is the starting point for [HiveBox](https://devopsroadmap.io/pro
      { "temperature": 21.67 }
      ```
 
+## Continuous Integration
+
+- **CI/CD pipeline runs on all pushes and pull requests to `main` only.**
+- The workflow covers:
+  - Python linting (`pylint`)
+  - Dockerfile linting (`hadolint`)
+  - Unit testing (`pytest`)
+  - Docker image build (verifies Dockerfile and packaging)
+
 ## Testing
 
 1. **Run all tests:**
@@ -127,6 +137,7 @@ Although most of my previous API experience has been with Java Spring Boot, I ha
 
 - All main changes will be submitted as Pull Requests for each project phase.
 - No direct pushes to the `main` branch will be made.
+- All CI/CD workflows only run on main or pull requests to main.
 
 ### senseBox Sensors
 
@@ -149,3 +160,4 @@ These are the three senseBox sensors selected from [openSenseMap](https://opense
 - [2025-06-24] Implemented comprehensive unit tests for endpoints, including edge and error cases.
 - [2025-06-24] Updated Dockerfile and .dockerignore for new structure.
 - [2025-06-24] Bumped version to 0.1.0 after implementing /temperature and full test suite.
+- [2025-06-25] Added GitHub Actions CI pipeline for linting, testing, and Docker build (runs only on main).
