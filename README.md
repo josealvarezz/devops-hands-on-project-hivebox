@@ -3,6 +3,8 @@
 [![Telegram Group](https://img.shields.io/badge/Telegram_Group-%232ca5e0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/DevOpsHive/985)
 [![Fork on GitHub](https://img.shields.io/badge/Fork_On_GitHub-%2336465D?style=for-the-badge&logo=github&logoColor=white)](https://github.com/DevOpsHiveHQ/devops-hands-on-project-hivebox/fork)
 ![Current Version](https://img.shields.io/badge/version-0.1.0-blue?style=for-the-badge&logo=python&logoColor=white)
+[![Continuous Integration Workflow](https://github.com/josealvarezz/devops-hands-on-project-hivebox/actions/workflows/ci.yml/badge.svg)](https://github.com/josealvarezz/devops-hands-on-project-hivebox/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/josealvarezz/devops-hands-on-project-hivebox/badge)](https://scorecard.dev/viewer/?uri=github.com/josealvarezz/devops-hands-on-project-hivebox)
 
 # HiveBox - DevOps End-to-End Hands-On Project (Personal Fork)
 
@@ -36,6 +38,7 @@ This repository is the starting point for [HiveBox](https://devopsroadmap.io/pro
 - [x] .dockerignore updated and improved
 - [x] Can run and test both locally and via Docker
 - [x] Continuous Integration (CI) pipeline with linting, testing, and Docker build (only runs on main or PRs to main)
+- [x] OpenSSF Scorecard security checks
 
 ## How to Run Locally
 
@@ -161,3 +164,4 @@ These are the three senseBox sensors selected from [openSenseMap](https://opense
 - [2025-06-24] Updated Dockerfile and .dockerignore for new structure.
 - [2025-06-24] Bumped version to 0.1.0 after implementing /temperature and full test suite.
 - [2025-06-25] Added GitHub Actions CI pipeline for linting, testing, and Docker build (runs only on main).
+- [2025-06-27] Integrated OpenSSF Scorecard workflow
