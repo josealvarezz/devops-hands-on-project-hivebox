@@ -1,4 +1,4 @@
-FROM python:3.12-slim@sha256:85a16b09171c774647cf2c9f62027552de44a29386e8d09e76cc92a0bda66c22
+FROM python:3.13-slim@sha256:f2fdaec50160418e0c2867ba3e254755edd067171725886d5d303fd7057bbf81
 
 RUN groupadd -r user && useradd -r -g user user
 
