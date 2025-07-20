@@ -1,5 +1,5 @@
 from datetime import datetime, timezone, timedelta
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 from app.main import app, __version__
 import requests
@@ -13,40 +13,47 @@ def test_get_version():
     assert response.json() == {"version": __version__}
 
 
-def make_mock_response(temp=None, date=None, corrupt=False):
-    class MockResponse:
-        def json(self):
-            if corrupt:
-                return {
-                    "sensors": [
-                        {}, {},
-                        {
-                            "lastMeasurement": {
-                                # Value is missing
-                            }
-                        }
-                    ]
-                }
-            else:
-                return {
-                    "sensors": [
-                        {}, {},
-                        {
-                            "lastMeasurement": {
-                                "value": temp,
-                                "createdAt": date
-                            }
-                        }
-                    ]
-                }
-    return MockResponse()
+def make_mock_response(temp=None, date=None, corrupt=False, status_code=200):
+    mock_resp = MagicMock()
+    mock_resp.status_code = status_code
+
+    if status_code >= 400:
+        mock_resp.raise_for_status.side_effect = requests.exceptions.HTTPError(
+            f"{status_code} Error")
+    else:
+        mock_resp.raise_for_status.return_value = None
+
+    sensor_at_index_2 = {}
+    if corrupt:
+        sensor_at_index_2 = {
+            "title": "Temperatur",
+            "lastMeasurement": {}
+        }
+    else:
+        sensor_at_index_2 = {
+            "title": "Temperatur",
+            "lastMeasurement": {
+                "value": temp,
+                "createdAt": date
+            }
+        }
+
+    mock_resp.json.return_value = {
+        "sensors": [
+            {},
+            {},
+            sensor_at_index_2
+        ]
+    }
+
+    return mock_resp
 
 
 def mock_requests_get_happy(*args, **kwargs):
     now = datetime.now(timezone.utc)
     recent_time = (now - timedelta(minutes=10)
                    ).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-    return make_mock_response(22.5, recent_time)
+    return make_mock_response(temp=22.5, date=recent_time)
 
 
 @patch("app.sensebox.requests.get", side_effect=mock_requests_get_happy)
@@ -59,7 +66,7 @@ def test_temperature_happy_path(mock_get):
 def mock_requests_get_old(*args, **kwargs):
     now = datetime.now(timezone.utc)
     old_time = (now - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-    return make_mock_response(22.5, old_time)
+    return make_mock_response(temp=22.5, date=old_time)
 
 
 @patch("app.sensebox.requests.get", side_effect=mock_requests_get_old)
@@ -75,14 +82,14 @@ def mock_requests_get_mixed(*args, **kwargs):
     recent_time = (now - timedelta(minutes=10)
                    ).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     old_time = (now - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
     if "5c72ec079e6756001987288b" in url:
-        return make_mock_response(20, recent_time)
+        return make_mock_response(temp=20, date=recent_time)
     elif "61eec6bf848248001ba4beeb" in url:
-        return make_mock_response(25, old_time)
+        return make_mock_response(temp=25, date=old_time)
     elif "61bf38bf19a991001b0e5cb4" in url:
-        return make_mock_response(22, recent_time)
-    else:
-        return make_mock_response(0, recent_time)
+        return make_mock_response(temp=22, date=recent_time)
+    return make_mock_response(status_code=404)
 
 
 @patch("app.sensebox.requests.get", side_effect=mock_requests_get_mixed)
@@ -98,14 +105,14 @@ def mock_requests_get_corrupt(*args, **kwargs):
     now = datetime.now(timezone.utc)
     recent_time = (now - timedelta(minutes=10)
                    ).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
     if "5c72ec079e6756001987288b" in url:
         return make_mock_response(corrupt=True)
     elif "61eec6bf848248001ba4beeb" in url:
-        return make_mock_response(25, recent_time)
+        return make_mock_response(temp=25, date=recent_time)
     elif "61bf38bf19a991001b0e5cb4" in url:
-        return make_mock_response(20, recent_time)
-    else:
-        return make_mock_response(0, recent_time)
+        return make_mock_response(temp=20, date=recent_time)
+    return make_mock_response(status_code=404)
 
 
 @patch("app.sensebox.requests.get", side_effect=mock_requests_get_corrupt)
@@ -131,22 +138,23 @@ def test_temperature_all_corrupt(mock_get):
 def test_temperature_api_error(mock_get):
     response = client.get("/temperature")
     assert response.status_code == 502
-    assert response.json()["detail"] == "Error fetching data from openSenseMap"
+    assert response.json()[
+        "detail"] == "Error communicating with openSenseMap API"
 
 
 def mock_requests_get_extremes(*args, **kwargs):
-    url = args[0]
     now = datetime.now(timezone.utc)
     recent_time = (now - timedelta(minutes=5)
                    ).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+    url = args[0]
     if "5c72ec079e6756001987288b" in url:
-        return make_mock_response(-50, recent_time)
+        return make_mock_response(temp=-50, date=recent_time)
     elif "61eec6bf848248001ba4beeb" in url:
-        return make_mock_response(100, recent_time)
+        return make_mock_response(temp=100, date=recent_time)
     elif "61bf38bf19a991001b0e5cb4" in url:
-        return make_mock_response(9999, recent_time)
-    else:
-        return make_mock_response(0, recent_time)
+        return make_mock_response(temp=9999, date=recent_time)
+    return make_mock_response(status_code=404)
 
 
 @patch("app.sensebox.requests.get", side_effect=mock_requests_get_extremes)
@@ -155,3 +163,15 @@ def test_temperature_extreme_values(mock_get):
     assert response.status_code == 200
     expected_average = round((-50 + 100 + 9999) / 3, 2)
     assert response.json()["temperature"] == expected_average
+
+
+def test_temperature_integration():
+    response = client.get("/temperature")
+    assert response.status_code in (200, 404)
+    if response.status_code == 200:
+        data = response.json()
+        assert "temperature" in data
+        assert "status" in data
+    else:
+        assert response.json()[
+            "detail"] == "No recent temperature data available"
