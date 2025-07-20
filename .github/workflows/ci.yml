@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Run hadolint
-        uses: hadolint/hadolint-action@f988afea3da57ee48710a9795b6bb677cc901183
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf
         with:
           dockerfile: ./Dockerfile
           no-fail: false
