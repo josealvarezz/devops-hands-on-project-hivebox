@@ -2,7 +2,7 @@
 [![Community](https://img.shields.io/badge/Join_Community-%23FF6719?style=for-the-badge&logo=substack&logoColor=white)](https://newsletter.devopsroadmap.io/subscribe)
 [![Telegram Group](https://img.shields.io/badge/Telegram_Group-%232ca5e0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/DevOpsHive/985)
 [![Fork on GitHub](https://img.shields.io/badge/Fork_On_GitHub-%2336465D?style=for-the-badge&logo=github&logoColor=white)](https://github.com/DevOpsHiveHQ/devops-hands-on-project-hivebox/fork)
-![Current Version](https://img.shields.io/badge/version-0.1.0-blue?style=for-the-badge&logo=python&logoColor=white)
+![Current Version](https://img.shields.io/badge/version-0.2.0-blue?style=for-the-badge&logo=python&logoColor=white)
 [![Continuous Integration Workflow](https://github.com/josealvarezz/devops-hands-on-project-hivebox/actions/workflows/ci.yml/badge.svg)](https://github.com/josealvarezz/devops-hands-on-project-hivebox/actions/workflows/ci.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/josealvarezz/devops-hands-on-project-hivebox/badge)](https://scorecard.dev/viewer/?uri=github.com/josealvarezz/devops-hands-on-project-hivebox)
 
@@ -39,6 +39,10 @@ This repository is the starting point for [HiveBox](https://devopsroadmap.io/pro
 - [x] Can run and test both locally and via Docker
 - [x] Continuous Integration (CI) pipeline with linting, testing, and Docker build (only runs on main or PRs to main)
 - [x] OpenSSF Scorecard security checks
+- [x] **senseBox IDs are now configurable via environment variable (`SENSEBOX_IDS`)**
+- [x] **/metrics endpoint implemented, exposing default Prometheus metrics using `prometheus_fastapi_instrumentator`**
+- [x] **Added `status` field to `/temperature` endpoint (Too Cold, Good, Too Hot)**
+- [x] **Integration test implemented for `/temperature` endpoint (real API call)**
 
 ## How to Run Locally
 
@@ -63,40 +67,55 @@ This repository is the starting point for [HiveBox](https://devopsroadmap.io/pro
    - Open [http://localhost:8000/version](http://localhost:8000/version) in your browser.
    - You should see:
      ```json
-     { "version": "0.1.0" }
+     { "version": "0.2.0" }
      ```
-   - The `/temperature` endpoint returns the average temperature of the 3 selected senseBoxes, if data is less than 1 hour old.
+   - The `/temperature` endpoint returns the average temperature of the 3 selected senseBoxes, if data is less than 1 hour old, and includes a `status` field.
+   - The `/metrics` endpoint returns Prometheus metrics about the app.
 
 ## Running with Docker
 
 1. **Build the Docker image:**
    ```sh
-   docker build -t hivebox:0.1.0 .
+   docker build -t hivebox:0.2.0 .
    ```
-2. **Run the container:**
+2. **Run the container (with custom senseBox IDs):**
+
    ```sh
-   docker run --rm -p 8000:80 hivebox:0.1.0
+   docker run --rm -p 8000:80 -e SENSEBOX_IDS="id1,id2,id3" hivebox:0.2.0
    ```
+
+   If you omit `SENSEBOX_IDS`, the default IDs will be used.
+
 3. **Test the API:**
-   - Open [http://localhost:8000/version](http://localhost:8000/version)
-   - Open [http://localhost:8000/temperature](http://localhost:8000/temperature)
-   - You should see:
+   - Open [http://localhost:8000/version](http://localhost:8000/version)  
+     **You should see:**
      ```json
-     { "version": "0.1.0" }
+     { "version": "0.2.0" }
      ```
-     and e.g.
+   - Open [http://localhost:8000/temperature](http://localhost:8000/temperature)  
+     **You should see (example):**
      ```json
-     { "temperature": 21.67 }
+     {
+       "temperature": 21.67,
+       "status": "Good"
+     }
      ```
+   - Open [http://localhost:8000/metrics](http://localhost:8000/metrics)
 
 ## Continuous Integration
 
-- **CI/CD pipeline runs on all pushes and pull requests to `main` only.**
-- The workflow covers:
-  - Python linting (`pylint`)
-  - Dockerfile linting (`hadolint`)
-  - Unit testing (`pytest`)
-  - Docker image build (verifies Dockerfile and packaging)
+- **ci.yml**: Runs on all pull requests to `main` only.
+
+  - Ensures that all code merged into `main` passes linting, testing, and Docker build checks before being accepted.
+  - The workflow covers:
+    - Python linting (`pylint`)
+    - Dockerfile linting (`hadolint`)
+    - Unit and integration testing (`pytest`)
+    - Docker image build (verifies Dockerfile and packaging)
+
+- **scorecards-analysis.yml**: Runs only on push to `main`.
+  - Performs OpenSSF Scorecard security checks on the latest state of the main branch.
+  - Keeps the security badge and repository analysis up to date.
 
 ## Testing
 
@@ -107,20 +126,22 @@ This repository is the starting point for [HiveBox](https://devopsroadmap.io/pro
 2. **What is tested:**
    - `/version` endpoint (returns version, always works)
    - `/temperature` endpoint:
-     - Happy path (recent data, correct average)
+     - Happy path (recent data, correct average, correct status)
      - No recent data (returns 404)
      - Some boxes with/without valid data (partial average)
      - Data corrupt or incomplete (ignores those boxes)
      - External API failure (returns 502)
-     - Extreme temperature values (calculates average)
+     - Extreme temperature values (calculates average and status)
      - Non-existent senseBox IDs (treated as no data)
+   - **Integration test**: Real call to `/temperature` endpoint (may depend on external API availability)
 
 ## Endpoints
 
-| Endpoint       | Method | Description                                           |
-| -------------- | ------ | ----------------------------------------------------- |
-| `/version`     | GET    | Returns current app version                           |
-| `/temperature` | GET    | Returns current average temperature from 3 senseBoxes |
+| Endpoint       | Method | Description                                                                  |
+| -------------- | ------ | ---------------------------------------------------------------------------- |
+| `/version`     | GET    | Returns current app version                                                  |
+| `/temperature` | GET    | Returns current average temperature from 3 senseBoxes, with a `status` field |
+| `/metrics`     | GET    | Returns default Prometheus metrics about the app                             |
 
 ## Implementation
 
@@ -138,9 +159,10 @@ Although most of my previous API experience has been with Java Spring Boot, I ha
 
 ### Contribution & Branch Strategy
 
-- All main changes will be submitted as Pull Requests for each project phase.
-- No direct pushes to the `main` branch will be made.
-- All CI/CD workflows only run on main or pull requests to main.
+- All main changes are submitted as Pull Requests for each project phase.
+- No direct pushes to the `main` branch are allowed.
+- **ci.yml** runs on pull requests to `main` (for linting, testing, and build).
+- **scorecards-analysis.yml** runs on push to `main` (for security checks).
 
 ### senseBox Sensors
 
@@ -165,3 +187,10 @@ These are the three senseBox sensors selected from [openSenseMap](https://opense
 - [2025-06-24] Bumped version to 0.1.0 after implementing /temperature and full test suite.
 - [2025-06-25] Added GitHub Actions CI pipeline for linting, testing, and Docker build (runs only on main).
 - [2025-06-27] Integrated OpenSSF Scorecard workflow
+- [2025-07-20] The `/temperature` endpoint now includes a `status` field ("Too Cold", "Good", "Too Hot") based on the average temperature.
+- [2025-07-20] The `/metrics` endpoint is implemented using `prometheus_fastapi_instrumentator` to expose default Prometheus metrics.
+- [2025-07-20] senseBox IDs are now configurable via the `SENSEBOX_IDS` environment variable, making deployment and containerization more flexible.
+- [2025-07-20] Improved error handling: `/temperature` returns 502 if the external API is unreachable, and 404 if there is no recent data.
+- [2025-07-20] Added a real integration test for `/temperature`, in addition to unit tests with mocks.
+- [2025-07-20] Decided to run CI only on Pull Requests to `main` and Scorecards only on push to `main`, following best workflow practices.
+- [2025-07-20] Refactored get_temps in sensebox.py to dynamically search for the temperature sensor by title, removing the dependency on a fixed index and improving robustness.
