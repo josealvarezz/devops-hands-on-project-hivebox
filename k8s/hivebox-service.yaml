@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hivebox-service
+  labels:
+    app: hivebox
+    app.kubernetes.io/name: hivebox
+    app.kubernetes.io/version: 0.2.0
+spec:
+  selector:
+    app: hivebox
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
