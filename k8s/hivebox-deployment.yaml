@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hivebox-deployment
+  labels:
+    app: hivebox
+    app.kubernetes.io/name: hivebox
+    app.kubernetes.io/version: 0.2.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hivebox
+  template:
+    metadata:
+      labels:
+        app: hivebox
+    spec:
+      containers:
+        - name: hivebox
+          image: hivebox:0.2.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+      env:
+        # Remove comments to use custom senseBox IDs
+        # - name: "SENSEBOX_IDS"
+        #   value: "5c72ec079e6756001987288b,61eec6bf848248001ba4beeb,61bf38bf19a991001b0e5cb4"
+        #   resources:
+        #     requests:
+        #       memory: "64Mi"
+        #       cpu: "100m"
+        #     limits:
+        #       memory: "128Mi"
+        #       cpu: "200m"

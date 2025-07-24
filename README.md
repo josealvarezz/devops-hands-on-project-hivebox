@@ -39,10 +39,12 @@ This repository is the starting point for [HiveBox](https://devopsroadmap.io/pro
 - [x] Can run and test both locally and via Docker
 - [x] Continuous Integration (CI) pipeline with linting, testing, and Docker build (only runs on main or PRs to main)
 - [x] OpenSSF Scorecard security checks
-- [x] **senseBox IDs are now configurable via environment variable (`SENSEBOX_IDS`)**
-- [x] **/metrics endpoint implemented, exposing default Prometheus metrics using `prometheus_fastapi_instrumentator`**
-- [x] **Added `status` field to `/temperature` endpoint (Too Cold, Good, Too Hot)**
-- [x] **Integration test implemented for `/temperature` endpoint (real API call)**
+- [x] senseBox IDs are now configurable via environment variable (`SENSEBOX_IDS`)
+- [x] /metrics endpoint implemented, exposing default Prometheus metrics using `prometheus_fastapi_instrumentator`\*\*
+- [x] \*\*Added `status` field to `/temperature` endpoint (Too Cold, Good, Too Hot)
+- [x] Integration test implemented for `/temperature` endpoint (real API call)
+- [x] **Kubernetes manifests created for deployment, service, ingress, NGINX Ingress Controller, and Kind cluster (in `k8s/`)**
+- [x] **Can deploy and test HiveBox on a local Kubernetes cluster using Kind**
 
 ## How to Run Locally
 
@@ -101,6 +103,48 @@ This repository is the starting point for [HiveBox](https://devopsroadmap.io/pro
      }
      ```
    - Open [http://localhost:8000/metrics](http://localhost:8000/metrics)
+
+## Kubernetes Deployment
+
+The project includes manifests to deploy HiveBox on a Kubernetes cluster. The files are located in the `k8s/` directory and include:
+
+- `hivebox-deployment.yaml`: Deployment for the HiveBox application.
+- `hivebox-service.yaml`: ClusterIP Service to expose the application internally within the cluster.
+- `hivebox-ingress.yaml`: Ingress to route HTTP traffic to the HiveBox service using the NGINX Ingress Controller.
+- `deploy-ingress-nginx.yaml`: Full manifest to deploy the NGINX Ingress Controller in the cluster.
+- `kind-cluster.yaml`: Configuration to create a local Kubernetes cluster using Kind, with port mappings for HTTP (8080) and HTTPS (8443).
+
+These manifests allow you to easily deploy and expose the application in a local or cloud-based Kubernetes environment.
+
+### How to use the Kubernetes manifests
+
+1. **Create a local Kind cluster:**
+   ```sh
+   kind create cluster --config k8s/kind-cluster.yaml
+   ```
+2. **Deploy the NGINX Ingress Controller:**
+   ```sh
+   kubectl apply -f k8s/deploy-ingress-nginx.yaml
+   ```
+3. **Build and load the Docker image into Kind:**
+   ```sh
+   docker build -t hivebox:0.2.0 .
+   kind load docker-image hivebox:0.2.0
+   ```
+4. **Deploy HiveBox resources:**
+   ```sh
+   kubectl apply -f k8s/hivebox-deployment.yaml
+   kubectl apply -f k8s/hivebox-service.yaml
+   kubectl apply -f k8s/hivebox-ingress.yaml
+   ```
+5. **Access the API:**
+   - Open [http://localhost:8080/version](http://localhost:8080/version) in your browser.
+   - The `/temperature` and `/metrics` endpoints are also available at this address.
+
+**Note:**
+
+- You can customize the senseBox IDs by editing the `SENSEBOX_IDS` environment variable in the deployment manifest (`hivebox-deployment.yaml`).
+- If you are using a cloud Kubernetes provider, you may need to adapt the manifests (e.g., change the Service type to `LoadBalancer`).
 
 ## Continuous Integration
 
@@ -194,3 +238,4 @@ These are the three senseBox sensors selected from [openSenseMap](https://opense
 - [2025-07-20] Added a real integration test for `/temperature`, in addition to unit tests with mocks.
 - [2025-07-20] Decided to run CI only on Pull Requests to `main` and Scorecards only on push to `main`, following best workflow practices.
 - [2025-07-20] Refactored get_temps in sensebox.py to dynamically search for the temperature sensor by title, removing the dependency on a fixed index and improving robustness.
+- [2025-07-24] Added Kubernetes manifests (`k8s/`) for deployment, service, ingress, NGINX Ingress Controller, and Kind cluster configuration. HiveBox can now be easily deployed on Kubernetes.
