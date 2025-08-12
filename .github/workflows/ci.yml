@@ -4,11 +4,11 @@ on:
   pull_request:
     branches: ["main"]
 
-permissions: read-all
-
 jobs:
   pylint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Set up Python 3.12
@@ -27,6 +27,8 @@ jobs:
   hadolint:
     name: Run hadolint scanning
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -39,6 +41,9 @@ jobs:
 
   pytest:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Set up Python 3.12
@@ -50,12 +55,51 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Analysing the code with Pytest
-        run: pytest
+          pip install pytest pytest-cov
+      - name: Run tests with coverage
+        run: |
+          pytest -q --maxfail=1 --disable-warnings --cov=app --cov-report=xml:coverage.xml
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
 
-  docker:
+  sonarcloud:
     needs: [pylint, hadolint, pytest]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-xml
+          path: .
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
+            -Dsonar.sources=app
+            -Dsonar.tests=tests
+            -Dsonar.python.version=3.12
+            -Dsonar.exclusions=**/__pycache__/**,**/.venv/**,**/.pytest_cache/**
+            -Dsonar.python.coverage.reportPaths=coverage.xml
+
+  docker:
+    needs: [pylint, hadolint, pytest, sonarcloud]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Build the Docker image
