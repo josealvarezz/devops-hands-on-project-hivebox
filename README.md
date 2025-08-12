@@ -43,8 +43,9 @@ This repository is the starting point for [HiveBox](https://devopsroadmap.io/pro
 - [x] /metrics endpoint implemented, exposing default Prometheus metrics using `prometheus_fastapi_instrumentator`\*\*
 - [x] \*\*Added `status` field to `/temperature` endpoint (Too Cold, Good, Too Hot)
 - [x] Integration test implemented for `/temperature` endpoint (real API call)
-- [x] **Kubernetes manifests created for deployment, service, ingress, NGINX Ingress Controller, and Kind cluster (in `k8s/`)**
-- [x] **Can deploy and test HiveBox on a local Kubernetes cluster using Kind**
+- [x] Kubernetes manifests created for deployment, service, ingress, NGINX Ingress Controller, and Kind cluster (in `k8s/`)
+- [x] Can deploy and test HiveBox on a local Kubernetes cluster using Kind
+- [x] **SonarCloud code analysis integrated into CI with Quality Gate PR check**
 
 ## How to Run Locally
 
@@ -155,7 +156,13 @@ These manifests allow you to easily deploy and expose the application in a local
     - Python linting (`pylint`)
     - Dockerfile linting (`hadolint`)
     - Unit and integration testing (`pytest`)
+    - SonarCloud code analysis with Quality Gate (consumes `coverage.xml` artifact and publishes a PR check)
     - Docker image build (verifies Dockerfile and packaging)
+  - Job orchestration:
+    - `sonarcloud` depends on `pylint`, `hadolint`, and `pytest` and runs before `docker`.
+    - `docker` depends on `pylint`, `hadolint`, `pytest`, and `sonarcloud`.
+  - Permissions:
+    - Minimum required permissions are set per-job (no global `read-all`).
 
 - **scorecards-analysis.yml**: Runs only on push to `main`.
   - Performs OpenSSF Scorecard security checks on the latest state of the main branch.
@@ -239,3 +246,7 @@ These are the three senseBox sensors selected from [openSenseMap](https://opense
 - [2025-07-20] Decided to run CI only on Pull Requests to `main` and Scorecards only on push to `main`, following best workflow practices.
 - [2025-07-20] Refactored get_temps in sensebox.py to dynamically search for the temperature sensor by title, removing the dependency on a fixed index and improving robustness.
 - [2025-07-24] Added Kubernetes manifests (`k8s/`) for deployment, service, ingress, NGINX Ingress Controller, and Kind cluster configuration. HiveBox can now be easily deployed on Kubernetes.
+- [2025-08-12] **Integrated SonarCloud into CI**: added a `sonarcloud` job that consumes `coverage.xml` from `pytest`, publishes a PR check, and enforces the Quality Gate.
+- [2025-08-12] **Pipeline orchestration updated**: `sonarcloud` depends on `pylint`, `hadolint`, and `pytest`; `docker` depends on all previous jobs including `sonarcloud`.
+- [2025-08-12] **Applied least-privilege permissions per job**: removed global `read-all` and set minimal `permissions` for each job.
+- [2025-08-12] **Branch protection guidance**: mark `pylint`, `hadolint`, `pytest`, and `sonarcloud` jobs as required checks on `main`.
