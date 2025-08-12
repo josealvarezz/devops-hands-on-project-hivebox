@@ -149,8 +149,10 @@ These manifests allow you to easily deploy and expose the application in a local
 
 ## Continuous Integration
 
-- **ci.yml**: Runs on all pull requests to `main` only.
+- **ci.yml**: Runs on pull requests to `main` and on push to `main`.
 
+  - On pull requests: runs `pylint`, `hadolint`, `pytest` (produces `coverage.xml` artifact), `sonarcloud` (uses the artifact), and `docker`.
+  - On push to main: runs `sonarcloud_main` only (generates coverage and updates Overall metrics in SonarCloud).
   - Ensures that all code merged into `main` passes linting, testing, and Docker build checks before being accepted.
   - The workflow covers:
     - Python linting (`pylint`)
@@ -161,6 +163,7 @@ These manifests allow you to easily deploy and expose the application in a local
   - Job orchestration:
     - `sonarcloud` depends on `pylint`, `hadolint`, and `pytest` and runs before `docker`.
     - `docker` depends on `pylint`, `hadolint`, `pytest`, and `sonarcloud`.
+    - `sonarcloud_main` runs only on push to `main` and is independent from the PR jobs.
   - Permissions:
     - Minimum required permissions are set per-job (no global `read-all`).
 
@@ -250,3 +253,4 @@ These are the three senseBox sensors selected from [openSenseMap](https://opense
 - [2025-08-12] **Pipeline orchestration updated**: `sonarcloud` depends on `pylint`, `hadolint`, and `pytest`; `docker` depends on all previous jobs including `sonarcloud`.
 - [2025-08-12] **Applied least-privilege permissions per job**: removed global `read-all` and set minimal `permissions` for each job.
 - [2025-08-12] **Branch protection guidance**: mark `pylint`, `hadolint`, `pytest`, and `sonarcloud` jobs as required checks on `main`.
+- [2025-08-12] **Added push-to-main SonarCloud path**: introduced `sonarcloud_main` job (push to `main`) to update Overall coverage without duplicating PR jobs.
